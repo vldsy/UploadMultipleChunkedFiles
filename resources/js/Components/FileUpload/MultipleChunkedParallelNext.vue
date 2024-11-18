@@ -24,9 +24,10 @@ const uploadQueue = ref([]);
 const activeUploads = ref(0);
 const maxParallelUploads = 5; // Adjust this value based on your server capacity
 const uploadTime = ref(0);
+let startTime;
 
 const handleFilesAdded = (event) => {
-  startTime = performance.now(); // Start the timer when files are added
+  startTime = performance.now();
   const files = event.target.files;
   for (let i = 0; i < files.length; i++) {
     processFile(files[i]);
@@ -34,7 +35,7 @@ const handleFilesAdded = (event) => {
 };
 
 const handleDrop = (event) => {
-  startTime = performance.now(); // Start the timer when files are dropped
+  startTime = performance.now();
   const files = event.dataTransfer.files;
   for (let i = 0; i < files.length; i++) {
     processFile(files[i]);
@@ -53,10 +54,10 @@ const processFile = (file) => {
   uploadNextChunks();
 };
 
-const uploadNextChunks = async () => {
+const uploadNextChunks = () => {
   while (activeUploads.value < maxParallelUploads && uploadQueue.value.length > 0) {
     const { file, chunkIndex, totalChunks } = uploadQueue.value.shift();
-    await uploadChunk(file, chunkIndex, totalChunks);
+    uploadChunk(file, chunkIndex, totalChunks);
   }
 
   if (uploadQueue.value.length === 0 && activeUploads.value === 0) {
@@ -65,7 +66,7 @@ const uploadNextChunks = async () => {
   }
 };
 
-const uploadChunk = async (file, chunkIndex, totalChunks) => {
+const uploadChunk = (file, chunkIndex, totalChunks) => {
   activeUploads.value++;
   const start = chunkIndex * chunkSize;
   const end = Math.min(start + chunkSize, file.size);
@@ -77,24 +78,26 @@ const uploadChunk = async (file, chunkIndex, totalChunks) => {
   formData.append('chunkIndex', chunkIndex);
   formData.append('totalChunks', totalChunks);
 
-  try {
-    const response = await fetch(uploadUrl, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-      },
+  fetch(uploadUrl, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(`Chunk ${chunkIndex + 1}/${totalChunks} uploaded successfully.`);
+    })
+    .catch((error) => {
+      console.error(`Error uploading chunk ${chunkIndex + 1}/${totalChunks}:`, error);
+      // Optionally, re-add the chunk to the queue for retry
+      uploadQueue.value.push({ file, chunkIndex, totalChunks });
+    })
+    .finally(() => {
+      activeUploads.value--;
+      uploadNextChunks();
     });
-    const data = await response.json();
-    console.log(`Chunk ${chunkIndex + 1}/${totalChunks} uploaded successfully.`);
-  } catch (error) {
-    console.error(`Error uploading chunk ${chunkIndex + 1}/${totalChunks}:`, error);
-    // Optionally, re-add the chunk to the queue for retry
-    uploadQueue.value.push({ file, chunkIndex, totalChunks });
-  } finally {
-    activeUploads.value--;
-    uploadNextChunks();
-  }
 };
 
 const handleSending = (file) => {
@@ -108,8 +111,6 @@ const handleSuccess = (file, response) => {
 const handleError = (file, response) => {
   console.error('Error uploading file:', response);
 };
-
-let startTime;
 
 onMounted(() => {
   useDropzone(dropzone.value, {
