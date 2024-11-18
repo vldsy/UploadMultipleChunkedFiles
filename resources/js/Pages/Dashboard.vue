@@ -10,6 +10,10 @@ const uploadUrl = '/upload'; // Your upload URL
 
 const dropzone = ref(null);
 
+const fileInput = ref(null);
+const uploadQueue = ref([]);
+const isUploading = ref(false);
+
 const handleFileAdded = (event) => {
   const file = event.target.files[0];
   console.log('File added:', file);
@@ -19,8 +23,22 @@ const handleFileAdded = (event) => {
 const processFile = (file) => {
   const totalChunks = Math.ceil(file.size / chunkSize);
   for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-    uploadChunk(file, chunkIndex, totalChunks);
+    uploadQueue.value.push({ file, chunkIndex, totalChunks });
   }
+  if (!isUploading.value) {
+    uploadNextChunk();
+  }
+};
+
+const uploadNextChunk = () => {
+  if (uploadQueue.value.length === 0) {
+    isUploading.value = false;
+    return;
+  }
+
+  isUploading.value = true;
+  const { file, chunkIndex, totalChunks } = uploadQueue.value.shift();
+  uploadChunk(file, chunkIndex, totalChunks);
 };
 
 const uploadChunk = (file, chunkIndex, totalChunks) => {
@@ -44,22 +62,14 @@ const uploadChunk = (file, chunkIndex, totalChunks) => {
     .then((response) => response.json())
     .then((data) => {
       console.log(`Chunk ${chunkIndex + 1}/${totalChunks} uploaded successfully.`);
+      uploadNextChunk();
     })
     .catch((error) => {
       console.error(`Error uploading chunk ${chunkIndex + 1}/${totalChunks}:`, error);
+      // Optionally, re-add the chunk to the queue for retry
+      //uploadQueue.value.push({ file, chunkIndex, totalChunks });
+      //uploadNextChunk();
     });
-};
-
-const handleSending = (file) => {
-  console.log('Sending file:', file);
-};
-
-const handleSuccess = (file, response) => {
-  console.log('File uploaded successfully:', response);
-};
-
-const handleError = (file, response) => {
-  console.error('Error uploading file:', response);
 };
 
 onMounted(() => {

@@ -21,7 +21,13 @@ class FileUploadController extends Controller
         }
 
         // Save the chunk
+        $chunkPath = $tempDir . '/' . $chunkIndex;
         $file->move($tempDir, $chunkIndex);
+
+        // Verify the chunk was saved
+        if (!file_exists($chunkPath)) {
+            return response()->json(['status' => 'error', 'message' => 'Failed to save chunk'], 500);
+        }
 
         // If all chunks are uploaded, merge them
         if ($chunkIndex + 1 == $totalChunks) {
@@ -35,6 +41,9 @@ class FileUploadController extends Controller
 
             for ($i = 0; $i < $totalChunks; $i++) {
                 $chunkPath = $tempDir . '/' . $i;
+                if (!file_exists($chunkPath)) {
+                    return response()->json(['status' => 'error', 'message' => 'Missing chunk ' . $i], 500);
+                }
                 $chunk = fopen($chunkPath, 'rb');
                 stream_copy_to_stream($chunk, $finalFile);
                 fclose($chunk);
