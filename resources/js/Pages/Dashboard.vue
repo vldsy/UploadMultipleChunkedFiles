@@ -14,10 +14,11 @@ const fileInput = ref(null);
 const uploadQueue = ref([]);
 const isUploading = ref(false);
 
-const handleFileAdded = (event) => {
-  const file = event.target.files[0];
-  console.log('File added:', file);
-  processFile(file);
+const handleFilesAdded = (event) => {
+  const files = event.target.files;
+  for (let i = 0; i < files.length; i++) {
+    processFile(files[i]);
+  }
 };
 
 const processFile = (file) => {
@@ -72,9 +73,21 @@ const uploadChunk = (file, chunkIndex, totalChunks) => {
     });
 };
 
+const handleSending = (file) => {
+  console.log('Sending file:', file);
+};
+
+const handleSuccess = (file, response) => {
+  console.log('File uploaded successfully:', response);
+};
+
+const handleError = (file, response) => {
+  console.error('Error uploading file:', response);
+};
+
 onMounted(() => {
   useDropzone(dropzone.value, {
-    onFileAdded: handleFileAdded,
+    onFileAdded: handleFilesAdded,
     onSending: handleSending,
     onSuccess: handleSuccess,
     onError: handleError,
@@ -101,7 +114,7 @@ onMounted(() => {
             You're logged in!
           </div>
 
-          <div> <input type="file" ref="fileInput" @change="handleFileAdded" /> </div>
+          <div> <input type="file" ref="fileInput" @change="handleFilesAdded" multiple /> </div>
 
         </div>
       </div>
