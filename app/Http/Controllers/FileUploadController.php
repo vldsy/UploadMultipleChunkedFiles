@@ -119,6 +119,12 @@ class FileUploadController extends Controller
     public function uploadParallel(Request $request)
     {
         try {
+            Log::info('Upload request received', [
+                'chunkIndex' => $request->input('chunkIndex'),
+                'totalChunks' => $request->input('totalChunks'),
+                'filename' => $request->input('filename')
+            ]);
+
             $file = $request->file('file');
             $chunkIndex = $request->input('chunkIndex');
             $totalChunks = $request->input('totalChunks');
@@ -174,7 +180,11 @@ class FileUploadController extends Controller
 
             return response()->json(['status' => 'success']);
         } catch (\Exception $e) {
-            Log::error("Error uploading file: " . $e->getMessage());
+            Log::error("Error uploading file: " . $e->getMessage(), [
+                'chunkIndex' => $request->input('chunkIndex'),
+                'totalChunks' => $request->input('totalChunks'),
+                'filename' => $request->input('filename')
+            ]);
             return response()->json(['status' => 'error', 'message' => 'Internal Server Error'], 500);
         }
     }

@@ -10,12 +10,15 @@ const dropzone = ref(null);
 const fileInput = ref(null);
 const uploadQueue = ref([]);
 const isUploading = ref(false);
+const uploadTime = ref(0);
+let startTime;
 
 const triggerFileInput = () => {
   fileInput.value.click();
 };
 
 const handleDrop = (event) => {
+  startTime = performance.now();
   const files = event.dataTransfer.files;
   for (let i = 0; i < files.length; i++) {
     processFile(files[i]);
@@ -23,6 +26,7 @@ const handleDrop = (event) => {
 };
 
 const handleFilesAdded = (event) => {
+  startTime = performance.now();
   const files = event.target.files;
   for (let i = 0; i < files.length; i++) {
     processFile(files[i]);
@@ -41,6 +45,8 @@ const processFile = (file) => {
 
 const uploadNextChunk = () => {
   if (uploadQueue.value.length === 0) {
+    const endTime = performance.now();
+    uploadTime.value = endTime - startTime;
     isUploading.value = false;
     return;
   }
@@ -117,6 +123,9 @@ onMounted(() => {
     <input type="file" ref="fileInput" @change="handleFilesAdded" multiple />
     <div ref="dropzone" class="dropzone" @drop.prevent="handleDrop" @dragover.prevent @dragenter.prevent
       @dragleave.prevent @click="triggerFileInput"> Drag and drop files here or click to select files
+    </div>
+    <div>
+      <p>Upload Time: {{ uploadTime }} ms</p>
     </div>
   </div>
 </template>

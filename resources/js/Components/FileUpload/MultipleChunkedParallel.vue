@@ -5,6 +5,9 @@
       @dragleave.prevent @click="triggerFileInput">
       Drag and drop files here or click to select files
     </div>
+    <div>
+      <p>Upload Time: {{ uploadTime }} ms</p>
+    </div>
   </div>
 </template>
 
@@ -13,15 +16,18 @@ import { ref, onMounted } from 'vue';
 import { useDropzone } from 'vue3-dropzone';
 
 const chunkSize = 1000000; // 1 MB
-const uploadUrl = '/upload'; // Your upload URL
+const uploadUrl = '/upload-parallel'; // Your upload URL
 
 const fileInput = ref(null);
 const dropzone = ref(null);
 const uploadQueue = ref([]);
 const activeUploads = ref(0);
 const maxParallelUploads = 5; // Adjust this value based on your server capacity
+const uploadTime = ref(0);
+let startTime;
 
 const handleFilesAdded = (event) => {
+  startTime = performance.now();
   const files = event.target.files;
   for (let i = 0; i < files.length; i++) {
     processFile(files[i]);
@@ -29,6 +35,7 @@ const handleFilesAdded = (event) => {
 };
 
 const handleDrop = (event) => {
+  startTime = performance.now();
   const files = event.dataTransfer.files;
   for (let i = 0; i < files.length; i++) {
     processFile(files[i]);
@@ -51,6 +58,11 @@ const uploadNextChunks = () => {
   while (activeUploads.value < maxParallelUploads && uploadQueue.value.length > 0) {
     const { file, chunkIndex, totalChunks } = uploadQueue.value.shift();
     uploadChunk(file, chunkIndex, totalChunks);
+  }
+
+  if (uploadQueue.value.length === 0 && activeUploads.value === 0) {
+    const endTime = performance.now();
+    uploadTime.value = endTime - startTime;
   }
 };
 
