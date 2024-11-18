@@ -25,6 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::post('/upload', [FileUploadController::class, 'upload']);
+    Route::post('/upload-parallel', [FileUploadController::class, 'uploadParallel']);
 });
 
 require __DIR__.'/auth.php';
