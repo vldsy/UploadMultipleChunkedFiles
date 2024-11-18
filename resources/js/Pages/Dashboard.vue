@@ -14,6 +14,17 @@ const fileInput = ref(null);
 const uploadQueue = ref([]);
 const isUploading = ref(false);
 
+const triggerFileInput = () => {
+  fileInput.value.click();
+};
+
+const handleDrop = (event) => {
+  const files = event.dataTransfer.files;
+  for (let i = 0; i < files.length; i++) {
+    processFile(files[i]);
+  }
+};
+
 const handleFilesAdded = (event) => {
   const files = event.target.files;
   for (let i = 0; i < files.length; i++) {
@@ -96,6 +107,15 @@ onMounted(() => {
 ////
 </script>
 
+<style>
+.dropzone {
+  border: 2px dashed #ccc;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+}
+</style>
+
 <template>
 
   <Head title="Dashboard" />
@@ -114,7 +134,12 @@ onMounted(() => {
             You're logged in!
           </div>
 
-          <div> <input type="file" ref="fileInput" @change="handleFilesAdded" multiple /> </div>
+          <div>
+            <input type="file" ref="fileInput" @change="handleFilesAdded" multiple />
+            <div ref="dropzone" class="dropzone" @drop.prevent="handleDrop" @dragover.prevent @dragenter.prevent
+              @dragleave.prevent @click="triggerFileInput"> Drag and drop files here or click to select files
+            </div>
+          </div>
 
         </div>
       </div>
